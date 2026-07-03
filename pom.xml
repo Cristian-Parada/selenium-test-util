@@ -13,6 +13,14 @@
         <allure.version>2.25.0</allure.version>
         <assertj.version>3.27.7</assertj.version>
     </properties>
+    
+    <distributionManagement>
+    <repository>
+        <id>github</id>
+        <name>GitHub Packages</name>
+        <url>https://maven.pkg.github.com/Cristian-Parada/selenium-test-util</url>
+    </repository>
+</distributionManagement>
 
     <dependencies>
 
