@@ -92,6 +92,7 @@ public class BaseWebElement {
      * @param locator estrategia usada para encontrar el elemento
      */
     public void click(By locator) {
+    	wait.waitElementClickableWithRetry(locator, 3, 2);
         this.findElement(locator).click();
     }
 
@@ -161,22 +162,7 @@ public class BaseWebElement {
         ((JavascriptExecutor) driver).executeScript("arguments[0].click();", option);
     }
 
-    /**
-     * Escribe el texto en el campo y presiona Enter para seleccionar la opción.
-     * Ideal para selects con muchas opciones (como Supervisor o Job Title),
-     * donde escribir es más rápido que buscar en la lista completa.
-     *
-     * <pre>{@code
-     * typeAndSelectOption(supervisorField, "John Smith");
-     * }</pre>
-     */
-    public void typeAndSelectOption(By dropdownTrigger, String optionText) {
-        WebElement trigger = driver.findElement(dropdownTrigger);
-        trigger.click();
-        trigger.sendKeys(optionText);
-        trigger.sendKeys(Keys.ENTER);
-    }
-
+    
     /**
      * Abre el dropdown y baja con la flecha del teclado hasta la posición indicada,
      * luego confirma con Enter. Útil cuando el texto de la opción no es confiable,
@@ -189,6 +175,7 @@ public class BaseWebElement {
     public void selectOptionByKeyboardPosition(By dropdownTrigger, int positionsDown) {
         WebElement trigger = driver.findElement(dropdownTrigger);
         trigger.click();
+        wait.pauseSeconds(1);
         for (int i = 0; i < positionsDown; i++) {
             trigger.sendKeys(Keys.ARROW_DOWN);
         }
@@ -210,29 +197,7 @@ public class BaseWebElement {
         new Actions(driver).moveToElement(option).click().perform();
     }
 
-
-    /**
-     * Abre el dropdown y busca la opción comparando el texto directamente,
-     * en vez de armar un XPath con el texto adentro. Es más seguro cuando
-     * el texto de la opción puede traer comillas u otros caracteres raros.
-     *
-     * <pre>{@code
-     * selectOptionFromList(statusTrigger, By.cssSelector("div[role='listbox'] span"), "Enabled");
-     * }</pre>
-     */
-    public void selectOptionFromList(By dropdownTrigger, By optionsContainer, String optionText) {
-        driver.findElement(dropdownTrigger).click();
-
-        List<WebElement> options = wait.getWait().until(
-            ExpectedConditions.presenceOfAllElementsLocatedBy(optionsContainer)
-        );
-        options.stream()
-            .filter(option -> option.getText().trim().equalsIgnoreCase(optionText))
-            .findFirst()
-            .orElseThrow(() -> new RuntimeException("[BaseWebElement] Opción no encontrada: " + optionText))
-            .click();
-    }
-    
+   
     
     /**
      * Carga un archivo en un input de tipo file, validando que exista antes de enviarlo.
@@ -335,4 +300,16 @@ public class BaseWebElement {
         WebElement container = driver.findElement(containerLocator);
         ((JavascriptExecutor) driver).executeScript("arguments[0].scrollTop = arguments[0].scrollHeight;", container);
     }
+    
+    
+    public void selectCountry(By countrySelectLocator, By listboxLocator, String countryName) {
+        click(countrySelectLocator);
+        wait.waitForElementVisible(listboxLocator);
+        By optionLocator = By.xpath("//div[@role='listbox']//span[text()='" + countryName + "']");
+        click(optionLocator);
+        wait.waitForElementInvisible(listboxLocator);
+
+    }
+    
+    
 }

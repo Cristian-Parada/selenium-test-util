@@ -12,9 +12,14 @@ import org.openqa.selenium.firefox.FirefoxOptions;
 public class DriverManager {
 
     private static final ThreadLocal<WebDriver> driverThreadLocal = new ThreadLocal<>();
+    
     private static Navegador navegadorConfigurado = Navegador.CHROME;
+    private static boolean headlessConfigurado = false;
+    
+    
 
     private static final String RUTA_BASE    = System.getProperty("user.dir") + "/src/test/resources/drivers/";
+    
     private static final String CHROME_PATH  = RUTA_BASE + "chromedriver.exe";
     private static final String FIREFOX_PATH = RUTA_BASE + "geckodriver.exe";
     private static final String EDGE_PATH    = RUTA_BASE + "msedgedriver.exe";
@@ -24,60 +29,92 @@ public class DriverManager {
         navegadorConfigurado = navegador;
     }
 
-    private static WebDriver crearDriver(Navegador navegador) {
+    public static void setHeadless(boolean isHeadless) {
+        headlessConfigurado = isHeadless;
+    }
+    
+    private static WebDriver crearDriver(Navegador navegador, boolean isHeadless) {
         return switch (navegador) {
-            case CHROME  -> crearChromeDriver();
-            case FIREFOX -> crearFirefoxDriver();
-            case EDGE    -> crearEdgeDriver();
+            case CHROME  -> crearChromeDriver(isHeadless);
+            case FIREFOX -> crearFirefoxDriver(isHeadless);
+            case EDGE    -> crearEdgeDriver(isHeadless);
             case SAFARI -> throw new UnsupportedOperationException("Safari no está soportado");
             default -> throw new IllegalStateException("Navegador no válido: " + navegador);
         };
     }
 
-    private static WebDriver crearChromeDriver() {
+    private static WebDriver crearChromeDriver(boolean isHeadless) {
         System.setProperty("webdriver.chrome.driver", CHROME_PATH);
         ChromeOptions options = new ChromeOptions();
-        options.addArguments("--start-maximized");
-        options.addArguments("--disable-notifications");
-        
-        // Bloquea TODAS las ventanas nuevas
-        options.addArguments("--block-new-web-contents");
 
-     // Modo incógnito (evita cookies de seguimiento, pero los anuncios siguen ahí)
-     options.addArguments("--incognito");
+        if (isHeadless) {
+            options.addArguments("--headless=new");        // corre sin interfaz gráfica
+            options.addArguments("--window-size=1920,1080"); // tamaño de viewport (obligatorio sin ventana física)
+            options.addArguments("--disable-gpu");          // sin GPU, no se necesita en headless
+            options.addArguments("--no-sandbox");           // requerido en entornos CI/Docker
+            options.addArguments("--disable-dev-shm-usage"); // evita fallos por poco espacio en /dev/shm
+        } else {
+            options.addArguments("--start-maximized"); // maximiza ventana (solo aplica con interfaz visible)
+        }
 
-     // Deshabilita extensiones problemáticas
-     options.addArguments("--disable-extensions");
+        options.addArguments("--disable-notifications");    // bloquea notificaciones push del navegador
+        options.addArguments("--block-new-web-contents");   // bloquea pop-ups / ventanas nuevas
+        options.addArguments("--incognito");                // sin cookies ni sesión previa
+        options.addArguments("--disable-extensions");        // desactiva extensiones del perfil
+
         return new ChromeDriver(options);
     }
 
-    private static WebDriver crearFirefoxDriver() {
+    private static WebDriver crearFirefoxDriver(boolean isHeadless) {
         System.setProperty("webdriver.gecko.driver", FIREFOX_PATH);
         FirefoxOptions options = new FirefoxOptions();
-        options.addArguments("--start-maximized");
+
+        if (isHeadless) {
+            options.addArguments("-headless");     // corre sin interfaz gráfica
+            options.addArguments("--width=1920");  // ancho del viewport
+            options.addArguments("--height=1080"); // alto del viewport
+        } else {
+            options.addArguments("--start-maximized");
+        }
+        
+        options.addPreference("browser.privatebrowsing.autostart", true); // equivalente a modo incógnito
+        options.addPreference("dom.webnotifications.enabled", false);     // desactiva notificaciones push
+        options.addPreference("dom.disable_open_during_load", true);      // bloquea pop-ups / ventanas nuevas
+        options.addPreference("extensions.autoDisableScopes", 15);        // evita que se autocarguen extensiones
         return new FirefoxDriver(options);
     }
 
-    private static WebDriver crearEdgeDriver() {
+    private static WebDriver crearEdgeDriver(boolean isHeadless) {
         System.setProperty("webdriver.edge.driver", EDGE_PATH);
         EdgeOptions options = new EdgeOptions();
-        options.addArguments("--start-maximized");
+
+        if (isHeadless) {
+            options.addArguments("--headless=new");         // basado en Chromium, misma sintaxis que Chrome
+            options.addArguments("--window-size=1920,1080"); // tamaño de viewport
+            options.addArguments("--disable-gpu");
+            options.addArguments("--no-sandbox");
+        } else {
+            options.addArguments("--start-maximized");
+        }
+        // Edge es Chromium, así que acepta los mismos flags de línea de comandos que Chrome.
+        options.addArguments("--disable-notifications");
+        options.addArguments("--block-new-web-contents");
+        options.addArguments("--inprivate");            // equivalente de Edge a "--incognito"
+        options.addArguments("--disable-extensions");
+
         return new EdgeDriver(options);
     }
 
-
-
-    // =============================================
-    // 4. MÉTODOS PÚBLICOS PRINCIPALES
-    // =============================================
-
+    
+    
+    
     /**
      * Obtiene el driver (lo crea si no existe)
      */
 
     public static WebDriver getDriver() {
         if (driverThreadLocal.get() == null) {
-            driverThreadLocal.set(crearDriver(navegadorConfigurado));
+            driverThreadLocal.set(crearDriver(navegadorConfigurado,headlessConfigurado));
         }
         return driverThreadLocal.get();
     }
@@ -135,9 +172,6 @@ public class DriverManager {
     public static Navegador getNavegadorActual() {
         return navegadorConfigurado;
     }
-    // =============================================
-    // 5. MÉTODOS DE UTILIDAD ADICIONALES
-    // =============================================
 
     /**
      * Obtiene el título de la página actual
@@ -183,7 +217,7 @@ public class DriverManager {
     public static void esperarSegundos(int segundos) {
         try {
             Thread.sleep(segundos * 1000);
-            System.out.println("⏱️ Esperando " + segundos + " segundos");
+            System.out.println(" Esperando " + segundos + " segundos");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -194,7 +228,7 @@ public class DriverManager {
      */
     public static void limpiarCookies() {
         getDriver().manage().deleteAllCookies();
-        System.out.println("🍪 Cookies eliminadas");
+        System.out.println(" Cookies eliminadas");
     }
 
 
