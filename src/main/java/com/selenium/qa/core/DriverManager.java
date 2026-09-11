@@ -122,7 +122,7 @@ public class DriverManager {
     /**
      * Cierra el navegador y libera recursos
      */
-    public static void cerrarDriver() {
+    public static void quitDriver() {
         WebDriver driver = driverThreadLocal.get();
         if (driver != null) {
             driver.quit();
@@ -153,7 +153,7 @@ public class DriverManager {
      * Reinicia el navegador (útil cuando cambias de navegador)
      */
     public static void reiniciarDriver() {
-        cerrarDriver();
+        quitDriver();
         getDriver();
     }
 

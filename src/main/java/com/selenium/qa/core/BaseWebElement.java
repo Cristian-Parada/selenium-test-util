@@ -105,6 +105,7 @@ public class BaseWebElement {
      */
     public void sendText(By locator, String value) throws InterruptedException {
         wait.waitElementVisibleWithRetry(locator, 5, 2);
+        click(locator);
         this.clearText(locator);
         this.findElement(locator).sendKeys(value);
     }
@@ -301,7 +302,15 @@ public class BaseWebElement {
         ((JavascriptExecutor) driver).executeScript("arguments[0].scrollTop = arguments[0].scrollHeight;", container);
     }
     
-    
+    /**
+     * Selecciona un país en el dropdown personalizado (Vue/OXD).
+     * Abre el selector, espera el listbox, hace clic en la opción con el texto
+     * indicado y espera a que el listbox se cierre.
+     *
+     * @param countrySelectLocator localizador que abre el dropdown
+     * @param listboxLocator localizador del listbox desplegado
+     * @param countryName nombre exacto del país a seleccionar
+     */
     public void selectCountry(By countrySelectLocator, By listboxLocator, String countryName) {
         click(countrySelectLocator);
         wait.waitForElementVisible(listboxLocator);
@@ -311,5 +320,6 @@ public class BaseWebElement {
 
     }
     
+
     
 }
