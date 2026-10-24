@@ -6,10 +6,12 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.WindowType;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
@@ -318,6 +320,78 @@ public class BaseWebElement {
         click(optionLocator);
         wait.waitForElementInvisible(listboxLocator);
 
+    }
+    
+    /**
+     * Mueve el puntero del mouse sobre el elemento localizado.
+     *
+     * @param locator localizador del elemento sobre el que se moverá el puntero
+     */
+    public void hover(By locator) {
+        new Actions(driver)
+                .moveToElement(findElement(locator))
+                .perform();
+    }
+
+    /**
+     * Envía una tecla al elemento que actualmente tiene el foco.
+     *
+     * @param key tecla que se enviará
+     */
+    public void pressKey(Keys key) {
+        driver.switchTo().activeElement().sendKeys(key);
+    }
+
+    /**
+     * Envía una tecla al elemento indicado por el localizador.
+     *
+     * @param locator localizador del elemento que recibirá la tecla
+     * @param key     tecla que se enviará
+     */
+    public void pressKey(By locator, Keys key) {
+        findElement(locator).sendKeys(key);
+    }
+
+    /**
+     * Comprueba si el elemento localizado es el que actualmente tiene el foco.
+     *
+     * @param locator localizador del elemento que se comprobará
+     * @return {@code true} si el elemento tiene el foco; de lo contrario, {@code false}
+     */
+    public boolean isFocused(By locator) {
+        WebElement element = findElement(locator);
+        return element.equals(driver.switchTo().activeElement());
+    }
+
+    /**
+     * Abre una pestaña nueva, cambia el foco a ella y navega a la URL indicada.
+     *
+     * @param url dirección a la que navegar en la pestaña nueva; no puede ser {@code null}
+     *            ni estar en blanco
+     * @throws IllegalArgumentException si la URL es {@code null} o está en blanco
+     */
+    public void openNewTab(String url) {
+        if (url == null || url.isBlank()) {
+            throw new IllegalArgumentException("La URL no puede estar vacía.");
+        }
+
+        driver.switchTo().newWindow(WindowType.TAB);
+        driver.get(url);
+    }
+
+    /**
+     * Cambia el tamaño de la ventana del navegador.
+     *
+     * @param width  ancho de la ventana en píxeles; debe ser mayor que cero
+     * @param height alto de la ventana en píxeles; debe ser mayor que cero
+     * @throws IllegalArgumentException si el ancho o el alto no son mayores que cero
+     */
+    public void setWindowSize(int width, int height) {
+        if (width <= 0 || height <= 0) {
+            throw new IllegalArgumentException("El ancho y el alto deben ser mayores que cero.");
+        }
+
+        driver.manage().window().setSize(new Dimension(width, height));
     }
     
 
